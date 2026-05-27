@@ -7,6 +7,7 @@ import { litellmLookup } from "./litellm.js";
 
 const MODEL_ALIASES = {
   "gemini-3-pro-high": "gemini-3-pro-preview",
+  "gemini-3.1-pro-high": "gemini-3.1-pro-preview",
 };
 
 let modelsCache = null;
