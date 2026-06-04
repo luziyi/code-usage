@@ -1,9 +1,11 @@
-import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import initSqlJs from "sql.js";
 import { getOpencodePricing } from "../pricing/opencode.js";
 import { computeCurrentStreakFromDates, normalizeCutoffDate } from "./utils.js";
+
+const SQL = await initSqlJs();
 
 export function collectOpencode(options = {}) {
   const cutoffDate = normalizeCutoffDate(options.cutoffDate);
@@ -301,31 +303,27 @@ function tryStorage(storageDir, dbPath) {
   return null;
 }
 
+function rows(result) {
+  if (!result || !result.length) return [];
+  const { columns, values } = result[0];
+  if (!columns || !values) return [];
+  return values.map((row) => {
+    const obj = {};
+    for (let i = 0; i < columns.length; i++) obj[columns[i]] = row[i];
+    return obj;
+  });
+}
+
 function queryDb(dbPath) {
   if (!existsSync(dbPath)) return { sessions: [], messages: [], projects: [] };
 
   try {
-    const sessionsRaw = execFileSync(
-      "sqlite3",
-      ["-json", dbPath, "SELECT id, project_id, directory, time_created FROM session"],
-      { encoding: "utf8", timeout: 10000, maxBuffer: 10 * 1024 * 1024 },
-    );
-    const sessions = JSON.parse(sessionsRaw || "[]");
-
-    const messagesRaw = execFileSync(
-      "sqlite3",
-      ["-json", dbPath, "SELECT id, session_id, time_created, data FROM message"],
-      { encoding: "utf8", timeout: 10000, maxBuffer: 10 * 1024 * 1024 },
-    );
-    const messages = JSON.parse(messagesRaw || "[]");
-
-    const projectsRaw = execFileSync("sqlite3", ["-json", dbPath, "SELECT id, worktree FROM project"], {
-      encoding: "utf8",
-      timeout: 10000,
-      maxBuffer: 10 * 1024 * 1024,
-    });
-    const projects = JSON.parse(projectsRaw || "[]");
-
+    const buffer = readFileSync(dbPath);
+    const db = new SQL.Database(buffer);
+    const sessions = rows(db.exec("SELECT id, project_id, directory, time_created FROM session"));
+    const messages = rows(db.exec("SELECT id, session_id, time_created, data FROM message"));
+    const projects = rows(db.exec("SELECT id, worktree FROM project"));
+    db.close();
     return { sessions, messages, projects };
   } catch {
     return { sessions: [], messages: [], projects: [] };

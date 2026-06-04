@@ -55,5 +55,8 @@
     "clean-css": "^5.3.3",
     "terser": "^5.46.0",
     "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "sql.js": "^1.14.1"
   }
 }
