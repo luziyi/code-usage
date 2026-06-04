@@ -308,20 +308,21 @@ function queryDb(dbPath) {
     const sessionsRaw = execFileSync(
       "sqlite3",
       ["-json", dbPath, "SELECT id, project_id, directory, time_created FROM session"],
-      { encoding: "utf8", timeout: 10000 },
+      { encoding: "utf8", timeout: 10000, maxBuffer: 10 * 1024 * 1024 },
     );
     const sessions = JSON.parse(sessionsRaw || "[]");
 
     const messagesRaw = execFileSync(
       "sqlite3",
       ["-json", dbPath, "SELECT id, session_id, time_created, data FROM message"],
-      { encoding: "utf8", timeout: 10000 },
+      { encoding: "utf8", timeout: 10000, maxBuffer: 10 * 1024 * 1024 },
     );
     const messages = JSON.parse(messagesRaw || "[]");
 
     const projectsRaw = execFileSync("sqlite3", ["-json", dbPath, "SELECT id, worktree FROM project"], {
       encoding: "utf8",
       timeout: 10000,
+      maxBuffer: 10 * 1024 * 1024,
     });
     const projects = JSON.parse(projectsRaw || "[]");
 
